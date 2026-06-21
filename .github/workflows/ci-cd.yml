@@ -1,0 +1,112 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  AWS_REGION: us-east-1
+  ECR_FRONTEND_REPOSITORY: employee-mgmt-frontend
+  ECR_BACKEND_REPOSITORY: employee-mgmt-backend
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js (Frontend)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          
+      - name: Install Frontend Dependencies
+        run: |
+          cd frontend
+          npm install
+          # npm test (Uncomment when frontend tests are implemented)
+
+      - name: Setup Python (Backend)
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          
+      - name: Install Backend Dependencies
+        run: |
+          cd backend
+          pip install -r requirements.txt
+          # pytest tests/ (Uncomment when backend tests are implemented)
+
+  build-and-push:
+    name: Build & Push to ECR
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    # We use OIDC for AWS authentication (Security Best Practice: No long-lived keys)
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, tag, and push Frontend image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          cd frontend
+          docker build -t $ECR_REGISTRY/$ECR_FRONTEND_REPOSITORY:$IMAGE_TAG -t $ECR_REGISTRY/$ECR_FRONTEND_REPOSITORY:latest .
+          docker push -a $ECR_REGISTRY/$ECR_FRONTEND_REPOSITORY
+
+      - name: Build, tag, and push Backend image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          cd backend
+          docker build -t $ECR_REGISTRY/$ECR_BACKEND_REPOSITORY:$IMAGE_TAG -t $ECR_REGISTRY/$ECR_BACKEND_REPOSITORY:latest .
+          docker push -a $ECR_REGISTRY/$ECR_BACKEND_REPOSITORY
+
+  deploy:
+    name: Deploy to EC2 (Zero-Downtime)
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          
+      - name: Trigger ASG Instance Refresh
+        run: |
+          # This instructs the EC2 Auto Scaling Group to replace old instances with new ones.
+          # The new instances will boot up, run their Launch Template user-data script, 
+          # pull the 'latest' image from ECR, and register with the ALB.
+          # MinHealthyPercentage ensures the app stays online during the rollout.
+          aws autoscaling start-instance-refresh \
+            --auto-scaling-group-name dev-asg \
+            --preferences '{"MinHealthyPercentage": 50, "InstanceWarmup": 300}'

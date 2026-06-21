@@ -1,0 +1,15 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'flask_backend'
+    metrics_path: '/metrics'
+    static_configs:
+      # In a real AWS environment, this would use EC2 Service Discovery (ec2_sd_configs)
+      # For local Docker testing, we point it directly to the backend container.
+      - targets: ['backend:5000']
