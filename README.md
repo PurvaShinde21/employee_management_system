@@ -3,7 +3,7 @@
 A production-grade, 3-tier web application built to demonstrate modern Cloud Architecture, DevOps automation, and Infrastructure as Code (IaC) best practices on AWS.
 
 ##  Live Demo
-*Link to Live Application (Replace with your ALB URL)*
+*Link to Live Application :*
 
 ##  Architecture & Technologies
 This project implements a highly available, scalable architecture using the following stack:
@@ -16,7 +16,7 @@ This project implements a highly available, scalable architecture using the foll
 *   **Cloud Provider**: AWS (VPC, EC2, ALB, Auto Scaling, RDS, IAM)
 *   **Security**: OIDC (OpenID Connect) for secretless authentication, Private Subnets for database isolation.
 
-## ⚙️DevOps & Cloud Highlights
+## DevOps & Cloud Highlights
 1.  **Zero-Downtime Deployments**: The CI/CD pipeline is configured to automatically build Docker images, push them to Amazon ECR, and trigger an AWS Auto Scaling Group Instance Refresh to seamlessly roll out updates without dropping traffic.
 2.  **Secretless Authentication (OIDC)**: Instead of storing long-lived AWS Access Keys in GitHub, this project uses an OpenID Connect (OIDC) trust relationship between GitHub Actions and AWS IAM to dynamically request temporary, least-privilege access tokens.
 3.  **Modular Infrastructure**: The AWS infrastructure is fully codified using Terraform modules (VPC, ALB, EC2 ASG, RDS, Security Groups) to promote reusability and clean state management.
