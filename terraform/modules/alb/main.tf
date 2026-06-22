@@ -8,9 +8,25 @@ resource "aws_lb" "main" {
   tags = { Name = "${var.environment}-alb" }
 }
 
-resource "aws_lb_target_group" "app" {
-  name     = "${var.environment}-tg"
+resource "aws_lb_target_group" "frontend" {
+  name     = "${var.environment}-frontend-tg"
   port     = 80
+  protocol = "HTTP"
+  vpc_id   = var.vpc_id
+
+  health_check {
+    path                = "/"
+    healthy_threshold   = 3
+    unhealthy_threshold = 3
+    timeout             = 5
+    interval            = 30
+    matcher             = "200"
+  }
+}
+
+resource "aws_lb_target_group" "backend" {
+  name     = "${var.environment}-backend-tg"
+  port     = 5000
   protocol = "HTTP"
   vpc_id   = var.vpc_id
 
@@ -31,6 +47,22 @@ resource "aws_lb_listener" "http" {
 
   default_action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.app.arn
+    target_group_arn = aws_lb_target_group.frontend.arn
+  }
+}
+
+resource "aws_lb_listener_rule" "api" {
+  listener_arn = aws_lb_listener.http.arn
+  priority     = 100
+
+  action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.backend.arn
+  }
+
+  condition {
+    path_pattern {
+      values = ["/api/*", "/health"]
+    }
   }
 }

@@ -33,5 +33,5 @@ module "ec2_asg" {
   environment           = var.environment
   private_subnet_ids    = module.vpc.private_app_subnets
   app_security_group_id = module.security_groups.app_sg_id
-  target_group_arn      = module.alb.target_group_arn
+  target_group_arns     = [module.alb.frontend_target_group_arn, module.alb.backend_target_group_arn]
 }
