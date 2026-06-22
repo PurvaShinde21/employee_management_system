@@ -107,6 +107,4 @@ jobs:
           # The new instances will boot up, run their Launch Template user-data script, 
           # pull the 'latest' image from ECR, and register with the ALB.
           # MinHealthyPercentage ensures the app stays online during the rollout.
-          aws autoscaling start-instance-refresh \
-            --auto-scaling-group-name dev-asg \
-            --preferences '{"MinHealthyPercentage": 50, "InstanceWarmup": 300}'
+          aws autoscaling start-instance-refresh --auto-scaling-group-name dev-asg --preferences '{"MinHealthyPercentage": 50, "InstanceWarmup": 300}'
