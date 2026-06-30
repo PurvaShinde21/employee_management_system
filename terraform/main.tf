@@ -34,4 +34,9 @@ module "ec2_asg" {
   private_subnet_ids    = module.vpc.private_app_subnets
   app_security_group_id = module.security_groups.app_sg_id
   target_group_arns     = [module.alb.frontend_target_group_arn, module.alb.backend_target_group_arn]
+  db_host               = module.rds.db_endpoint
+  db_user               = var.db_username
+  db_pass               = var.db_password
+  db_name               = "employees"
 }
+
