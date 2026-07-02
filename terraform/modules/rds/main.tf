@@ -16,10 +16,14 @@ resource "aws_db_instance" "main" {
   username               = var.db_username
   password               = var.db_password
   parameter_group_name   = "default.mysql8.0"
+  # NOTE: skip_final_snapshot=true is intentional for this dev/demo environment.
+  # For production, set to false and configure a final_snapshot_identifier.
   skip_final_snapshot    = true
   multi_az               = var.multi_az
   vpc_security_group_ids = [var.db_security_group_id]
   db_subnet_group_name   = aws_db_subnet_group.main.name
+  # NOTE: For production, enable storage_encrypted = true with a KMS key.
 
   tags = { Name = "${var.environment}-employee-db" }
 }
+

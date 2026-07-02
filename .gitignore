@@ -24,6 +24,11 @@ __pycache__/
 *$py.class
 venv/
 .env
+*.env.local
+*.env.*.local
+
+# Local SQLite dev database
+backend/app/employees.db
 
 # OS
 .DS_Store
